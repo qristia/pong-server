@@ -7,7 +7,7 @@ export default class Ball {
     this.radius = settings.ballRadius;
     this.x = settings.width / 2;
     this.y = settings.height / 2;
-    this.speed = { x: 10, y: 0 };
+    this.speed = { x: 5, y: 0 };
     this.angle = 0;
     this.reset();
   }
@@ -71,11 +71,11 @@ export default class Ball {
     let randomAngle = Math.PI / 4 - Math.random() * Math.PI / 2
     if (Math.random() > 0.5) randomAngle += Math.PI;
 
-    this.speed.x = 10 * Math.cos(randomAngle);
-    this.speed.y = 10 * Math.sin(randomAngle)
+    this.speed.x = settings.ballSpeed * Math.cos(randomAngle);
+    this.speed.y = settings.ballSpeed * Math.sin(randomAngle)
 
-    this.speed.x = clamp(this.speed.x, -10, 10);
-    this.speed.y = clamp(this.speed.y, -10, 10);
+    this.speed.x = clamp(this.speed.x, -settings.ballSpeed, settings.ballSpeed);
+    this.speed.y = clamp(this.speed.y, -settings.ballSpeed, 10);
   }
 
   update() {

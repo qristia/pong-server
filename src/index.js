@@ -107,6 +107,6 @@ function loop() {
   io.emit("ball movement", { x: ball.x, y: ball.y })
 }
 
-server.listen(3000, () => {
+server.listen(process.env.PORT || 3000, () => {
   console.log("listening on port 3000");
 });

@@ -5,5 +5,6 @@ export const settings = {
   paddleHeight: 120,
   ballRadius: 10,
   moveSpeed: 20,
+  ballSpeed: 5,
 };
 
