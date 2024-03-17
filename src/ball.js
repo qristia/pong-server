@@ -1,6 +1,6 @@
 import { settings } from "./game.js";
 import { clamp, circleRectIntersection } from "./utils.js";
-import { emitScore } from './index.js'
+import { emitCollision, emitScore } from './index.js'
 
 export default class Ball {
   constructor() {
@@ -26,31 +26,35 @@ export default class Ball {
     );
 
     if (intersects) {
-      const collisionPoint = Math.abs(this.x - player.x) / (paddleWidth / 2);
+      const x = this.x - player.x;
+      const y = this.y - player.y;
+      const collisionPoint = Math.abs(x) / paddleWidth * 2
+      const force = y / paddleHeight * 20
 
       if (collisionPoint > 1) {
-        this.x = player.x + (paddleWidth / 2 + this.radius) * Math.sign(this.x - player.x);
+        this.x = player.x + (paddleWidth / 2 + this.radius) * Math.sign(x);
         this.speed.x *= -1;
       } else {
-        this.y = player.y + (paddleHeight / 2 + this.radius) * Math.sign(this.y - player.y);
+        this.y = player.y + (paddleHeight / 2 + this.radius) * Math.sign(y);
         this.speed.y *= -1;
       }
+
+      this.speed.y += force;
+      emitCollision()
     }
   }
 
   intersectBounds() {
     if (this.x + this.radius >= settings.width) {
       // right loses
-      emitScore("left")
       this.reset();
-      // this.speed.x *= -1;
+      emitScore("left")
       return;
     }
     if (this.x <= this.radius) {
       // left loses
-      emitScore("right")
       this.reset();
-      // this.speed.x *= -1;
+      emitScore("right")
       return;
     }
 
@@ -58,9 +62,11 @@ export default class Ball {
     if (this.y + this.radius >= settings.height) {
       this.y = settings.height - this.radius;
       this.speed.y *= -1;
+      emitCollision()
     } else if (this.y <= this.radius) {
       this.y = this.radius;
       this.speed.y *= -1;
+      emitCollision()
     }
   }
 
@@ -72,16 +78,28 @@ export default class Ball {
     if (Math.random() > 0.5) randomAngle += Math.PI;
 
     this.speed.x = settings.ballSpeed * Math.cos(randomAngle);
-    this.speed.y = settings.ballSpeed * Math.sin(randomAngle)
+    this.speed.y = settings.ballSpeed * Math.sin(randomAngle);
 
-    this.speed.x = clamp(this.speed.x, -settings.ballSpeed, settings.ballSpeed);
-    this.speed.y = clamp(this.speed.y, -settings.ballSpeed, 10);
+    // this.speed.x = clamp(this.speed.x, -settings.ballSpeed, settings.ballSpeed);
+    // this.speed.y = clamp(this.speed.y, -settings.ballSpeed, settings.ballSpeed);
   }
 
-  update() {
-    this.x += this.speed.x;
-    this.y += this.speed.y;
+  update(deltaTime) {
+    const t = deltaTime / 1000;
+    this.x += this.speed.x * t;
+    this.y += this.speed.y * t;
+    // this.x += this.speed.x;
+    // this.y += this.speed.y;
 
     this.intersectBounds();
+  }
+
+  get() {
+    return {
+      x: this.x,
+      y: this.y,
+      speed: this.speed,
+      time: Date.now()
+    }
   }
 }

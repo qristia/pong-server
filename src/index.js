@@ -34,7 +34,7 @@ io.on('connection', (socket) => {
     console.log('only 2 users supported')
     return;
   }
-  
+
   let position = "left"
   for (const player in players) {
     if (players[player].position === "left") position = "right";
@@ -52,9 +52,13 @@ io.on('connection', (socket) => {
   }
 
   socket.on('player status', (player) => {
-    if (player == null) return;
+    if (player == null || !players[player.position]) return;
     players[player.position].move(player.x, player.y)
-    io.emit("player moved", player) 
+    io.emit("player moved", player)
+  })
+
+  socket.on("ping", () => {
+    socket.emit("pong", Date.now())
   })
 
   socket.on('disconnect', () => {
@@ -76,7 +80,9 @@ io.on('connection', (socket) => {
 function startGame() {
   if (GAME_STATE.running) return;
   GAME_STATE.running = true;
-  io.emit("game start", {})
+
+  const { ball } = GAME_STATE;
+  io.emit("game start", { ball: { x: ball.x, y: ball.y, speed: ball.speed, time: Date.now() } })
   intervalId = setInterval(loop, 1000 / tick)
 }
 
@@ -88,25 +94,43 @@ function stopGame() {
 }
 
 export function emitScore(position) {
+  const { ball } = GAME_STATE;
   const player = players[position];
   player.increaseScore();
-  io.emit('player score', {position, totalScore: player.score })
+  io.emit('player score', {
+    player: {
+      position, totalScore: player.score,
+    },
+    ball: ball.get()
+  })
+}
+
+export function emitCollision() {
+  const { ball } = GAME_STATE;
+  io.emit('ball collision', ball.get())
 }
 
 let intervalId = -1;
 let tick = 128;
+
+let lastTime = 0;
+let deltaTime = 0;
 function loop() {
+  const now = performance.now();
+  deltaTime = now - lastTime;
+  lastTime = now;
   const { ball } = GAME_STATE;
 
   for (const player in players) {
     ball.intersects(players[player])
   }
 
-  ball.update();
+  ball.update(deltaTime);
 
-  io.emit("ball movement", { x: ball.x, y: ball.y })
+  io.emit("ball movement", ball.get())
 }
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log("listening on port 3000");
+const port = process.env.PORT || 3000;
+server.listen(port, () => {
+  console.log(`listening on port ${port}`);
 });
